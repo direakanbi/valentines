@@ -26,6 +26,8 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+    const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(journey.photos.length).fill(false))
+    const [currentImageLoading, setCurrentImageLoading] = useState(true)
 
     // Confetti trigger
     const triggerConfetti = () => {
@@ -49,6 +51,26 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
         fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
         fire(0.1, { spread: 120, startVelocity: 45 })
     }
+
+    // Preload all images on component mount
+    useEffect(() => {
+        journey.photos.forEach((url, index) => {
+            const img = new Image()
+            img.src = url
+            img.onload = () => {
+                setImagesLoaded(prev => {
+                    const updated = [...prev]
+                    updated[index] = true
+                    return updated
+                })
+            }
+        })
+    }, [journey.photos])
+
+    // Track current image loading state
+    useEffect(() => {
+        setCurrentImageLoading(!imagesLoaded[currentPhotoIndex])
+    }, [currentPhotoIndex, imagesLoaded])
 
     // Audio Setup
     useEffect(() => {
@@ -249,11 +271,18 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
                                 exit="exit"
                                 className="absolute inset-0 w-full h-full"
                             >
+                                {/* Loading Skeleton */}
+                                {currentImageLoading && (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-900 to-black animate-pulse" />
+                                )}
+
                                 {/* Image Layer */}
                                 <img
                                     src={journey.photos[currentPhotoIndex]}
                                     alt="Memory"
-                                    className="w-full h-full object-cover opacity-80"
+                                    className={`w-full h-full object-cover transition-opacity duration-500 ${currentImageLoading ? 'opacity-0' : 'opacity-80'
+                                        }`}
+                                    onLoad={() => setCurrentImageLoading(false)}
                                 />
 
                                 {/* Vignette/Overlay */}

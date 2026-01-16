@@ -22,6 +22,65 @@ export default function AdminPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
 
+    // Helper function to compress images
+    const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.readAsDataURL(file)
+            reader.onload = (event) => {
+                const img = new Image()
+                img.src = event.target?.result as string
+                img.onload = () => {
+                    const canvas = document.createElement('canvas')
+                    const ctx = canvas.getContext('2d')
+
+                    // Max dimensions
+                    const MAX_WIDTH = 1920
+                    const MAX_HEIGHT = 1080
+
+                    let width = img.width
+                    let height = img.height
+
+                    // Calculate new dimensions
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height = (height * MAX_WIDTH) / width
+                            width = MAX_WIDTH
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width = (width * MAX_HEIGHT) / height
+                            height = MAX_HEIGHT
+                        }
+                    }
+
+                    canvas.width = width
+                    canvas.height = height
+
+                    ctx?.drawImage(img, 0, 0, width, height)
+
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now(),
+                                })
+                                resolve(compressedFile)
+                            } else {
+                                reject(new Error('Compression failed'))
+                            }
+                        },
+                        'image/jpeg',
+                        0.8 // Quality: 0.8 = 80%
+                    )
+                }
+                img.onerror = reject
+            }
+            reader.onerror = reject
+        })
+    }
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return
 
@@ -31,13 +90,16 @@ export default function AdminPage() {
 
         try {
             for (const file of files) {
-                const fileExt = file.name.split('.').pop()
+                // Compress image before upload
+                const compressedFile = await compressImage(file)
+
+                const fileExt = 'jpg' // Always use jpg after compression
                 const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
                 const filePath = `${formData.slug || 'temp'}/${fileName}`
 
                 const { error: uploadError } = await supabase.storage
                     .from('valentine_photos')
-                    .upload(filePath, file)
+                    .upload(filePath, compressedFile)
 
                 if (uploadError) throw uploadError
 
