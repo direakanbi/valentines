@@ -26,6 +26,8 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+    const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(journey.photos.length).fill(false))
+    const [currentImageLoading, setCurrentImageLoading] = useState(true)
 
     // Confetti trigger
     const triggerConfetti = () => {
@@ -49,6 +51,26 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
         fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
         fire(0.1, { spread: 120, startVelocity: 45 })
     }
+
+    // Preload all images on component mount
+    useEffect(() => {
+        journey.photos.forEach((url, index) => {
+            const img = new Image()
+            img.src = url
+            img.onload = () => {
+                setImagesLoaded(prev => {
+                    const updated = [...prev]
+                    updated[index] = true
+                    return updated
+                })
+            }
+        })
+    }, [journey.photos])
+
+    // Track current image loading state
+    useEffect(() => {
+        setCurrentImageLoading(!imagesLoaded[currentPhotoIndex])
+    }, [currentPhotoIndex, imagesLoaded])
 
     // Audio Setup
     useEffect(() => {
@@ -111,7 +133,7 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
     const handleYes = async () => {
         try {
             await supabase
-                .from('val_journeys')
+                .from('valentine_journeys')
                 .update({ is_accepted: true })
                 .eq('slug', journey.slug)
 
@@ -175,174 +197,308 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="flex flex-col items-center justify-center min-h-screen p-6 relative"
+                        className="flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden"
                     >
-                        {/* Ambient Background */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-black to-black opacity-80" />
+                        {/* 3D Floating Hearts Background */}
+                        <div className="absolute inset-0">
+                            {[...Array(20)].map((_, i) => {
+                                // Use safe dimensions that work during SSR
+                                const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920
+                                const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080
 
-                        <div className="relative z-10 w-full max-w-md space-y-8 text-center">
-                            <div className="mx-auto w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 shadow-2xl shadow-rose-900/20">
-                                <Lock className="w-6 h-6 text-rose-500" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <h1 className="text-3xl md:text-4xl italic text-neutral-200 tracking-wide">
-                                    The Gate
-                                </h1>
-                                <p className="text-neutral-500 font-sans text-sm tracking-widest uppercase">
-                                    A Secret Key Required
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleUnlock} className="space-y-6 pt-4">
-                                <div className="relative group">
-                                    <input
-                                        type="text"
-                                        value={passcode}
-                                        onChange={(e) => {
-                                            setPasscode(e.target.value)
-                                            setError('')
+                                return (
+                                    <motion.div
+                                        key={i}
+                                        className="absolute"
+                                        initial={{
+                                            x: Math.random() * screenWidth,
+                                            y: screenHeight + 100,
+                                            rotate: Math.random() * 360,
+                                            scale: 0.5 + Math.random() * 0.5
                                         }}
-                                        placeholder="Enter the secret..."
-                                        className="w-full bg-transparent border-b-2 border-neutral-800 py-3 px-4 text-center text-xl text-white placeholder-neutral-700 outline-none focus:border-rose-500 transition-colors group-hover:border-neutral-700"
-                                        autoFocus
-                                    />
-                                    {error && (
-                                        <motion.p
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="absolute -bottom-8 left-0 right-0 text-red-500 text-xs font-sans tracking-wide"
+                                        animate={{
+                                            y: -100,
+                                            rotate: 360 + Math.random() * 360,
+                                            x: Math.random() * screenWidth
+                                        }}
+                                        transition={{
+                                            duration: 15 + Math.random() * 10,
+                                            repeat: Infinity,
+                                            delay: Math.random() * 5,
+                                            ease: "linear"
+                                        }}
+                                        style={{
+                                            filter: 'blur(1px)',
+                                            opacity: 0.1 + Math.random() * 0.2
+                                        }}
+                                    >
+                                        <Heart className="w-8 h-8 text-rose-500 fill-rose-500/30" />
+                                    </motion.div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Gradient Orbs */}
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl animate-pulse" />
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+
+                        {/* Main Gate Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, rotateX: 20 }}
+                            animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="relative z-10 w-full max-w-lg"
+                            style={{ perspective: '1000px' }}
+                        >
+                            {/* Glassmorphism Card */}
+                            <div className="relative backdrop-blur-2xl bg-gradient-to-br from-neutral-900/80 via-neutral-900/60 to-neutral-900/80 border border-neutral-800/50 rounded-3xl p-12 shadow-2xl">
+                                {/* Shimmer Effect */}
+                                <div className="absolute inset-0 rounded-3xl overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-500/10 to-transparent animate-shimmer" />
+                                </div>
+
+                                {/* Lock Icon with 3D Effect */}
+                                <motion.div
+                                    animate={{
+                                        rotateY: [0, 360],
+                                        scale: [1, 1.1, 1]
+                                    }}
+                                    transition={{
+                                        duration: 4,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                    className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center border border-rose-500/30 shadow-lg shadow-rose-500/20 mb-8"
+                                    style={{ transformStyle: 'preserve-3d' }}
+                                >
+                                    <Lock className="w-10 h-10 text-rose-400" />
+                                </motion.div>
+
+                                {/* Title */}
+                                <div className="space-y-3 mb-10 text-center">
+                                    <motion.h1
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="text-5xl md:text-6xl font-serif bg-gradient-to-r from-rose-200 via-pink-200 to-rose-200 bg-clip-text text-transparent"
+                                        style={{
+                                            textShadow: '0 0 30px rgba(244, 114, 182, 0.3)'
+                                        }}
+                                    >
+                                        For {journey.partner_name}
+                                    </motion.h1>
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.5 }}
+                                        className="text-neutral-400 font-sans text-sm tracking-[0.3em] uppercase"
+                                    >
+                                        A Journey Awaits You
+                                    </motion.p>
+                                </div>
+
+                                {/* Form */}
+                                <form onSubmit={handleUnlock} className="space-y-8">
+                                    <div className="relative">
+                                        {/* Input with 3D effect */}
+                                        <motion.div
+                                            whileFocus={{ scale: 1.02 }}
+                                            className="relative"
                                         >
-                                            {error}
-                                        </motion.p>
+                                            <input
+                                                type="text"
+                                                value={passcode}
+                                                onChange={(e) => {
+                                                    setPasscode(e.target.value)
+                                                    setError('')
+                                                }}
+                                                placeholder="Enter the secret key..."
+                                                className="w-full bg-neutral-950/50 border-2 border-neutral-800/50 rounded-2xl py-4 px-6 text-center text-lg text-white placeholder-neutral-600 outline-none focus:border-rose-500/50 focus:shadow-lg focus:shadow-rose-500/20 transition-all backdrop-blur-sm"
+                                                autoFocus
+                                                style={{
+                                                    boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.3)'
+                                                }}
+                                            />
+                                            {/* Floating particles on focus */}
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-400 rounded-full blur-sm animate-ping" />
+                                            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-pink-400 rounded-full blur-sm animate-ping" style={{ animationDelay: '0.5s' }} />
+                                        </motion.div>
+
+                                        {/* Error Message */}
+                                        <AnimatePresence>
+                                            {error && (
+                                                <motion.p
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -10 }}
+                                                    className="absolute -bottom-8 left-0 right-0 text-red-400 text-xs font-sans tracking-wide text-center"
+                                                >
+                                                    {error}
+                                                </motion.p>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Submit Button with 3D Hover */}
+                                    <motion.button
+                                        type="submit"
+                                        whileHover={{ scale: 1.05, rotateX: 5 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="w-full relative group overflow-hidden rounded-2xl"
+                                        style={{ transformStyle: 'preserve-3d' }}
+                                    >
+                                        {/* Animated gradient background */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-pink-500 to-rose-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+
+                                        {/* Button content */}
+                                        <span className="relative flex items-center justify-center gap-3 px-8 py-4 text-white font-medium tracking-wider">
+                                            <Heart className="w-5 h-5 fill-white" />
+                                            Unlock Your Journey
+                                            <Heart className="w-5 h-5 fill-white" />
+                                        </span>
+                                    </motion.button>
+                                </form>
+
+                                {/* Decorative elements */}
+                                <div className="absolute -top-3 -right-3 w-24 h-24 bg-gradient-to-br from-rose-500/20 to-transparent rounded-full blur-2xl" />
+                                <div className="absolute -bottom-3 -left-3 w-24 h-24 bg-gradient-to-br from-pink-500/20 to-transparent rounded-full blur-2xl" />
+                            </div>
+                        </motion.div>
+
+                        {/* Bottom hint text */}
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1 }}
+                            className="relative z-10 mt-8 text-neutral-600 text-xs tracking-widest uppercase"
+                        >
+                            Created with love by {journey.proposer_name}
+                        </motion.p>
+                    </motion.div>
+                )
+                }
+
+                {/* === STEP 2: STORY (PHOTOS) === */}
+                {
+                    step === 'story' && (
+                        <motion.div
+                            key="story"
+                            className="fixed inset-0 bg-black"
+                        >
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={currentPhotoIndex} // Unique key triggers exit/enter
+                                    variants={kenBurnsVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                    className="absolute inset-0 w-full h-full"
+                                >
+                                    {/* Loading Skeleton */}
+                                    {currentImageLoading && (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-900 to-black animate-pulse" />
+                                    )}
+
+                                    {/* Image Layer */}
+                                    <img
+                                        src={journey.photos[currentPhotoIndex]}
+                                        alt="Memory"
+                                        className={`w-full h-full object-cover transition-opacity duration-500 ${currentImageLoading ? 'opacity-0' : 'opacity-80'
+                                            }`}
+                                        onLoad={() => setCurrentImageLoading(false)}
+                                    />
+
+                                    {/* Vignette/Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+
+                                    {/* Optional Text Overlay per slide could go here */}
+                                    <div className="absolute bottom-20 left-0 right-0 text-center p-8">
+                                        <p className="text-white/70 italic font-medium tracking-wider">
+                                            {currentPhotoIndex === 0 && "It started with a moment..."}
+                                            {currentPhotoIndex === 1 && "And grew into a lifetime..."}
+                                            {currentPhotoIndex >= 2 && "Of memories and dreams..."}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </motion.div>
+                    )
+                }
+
+                {/* === STEP 3: PROPOSAL (FINAL) === */}
+                {
+                    (step === 'proposal' || step === 'accepted') && (
+                        <motion.div
+                            key="proposal"
+                            variants={fadeVariants}
+                            initial="initial"
+                            animate="animate"
+                            className="relative min-h-screen flex flex-col items-center justify-center text-center p-6 z-20"
+                        >
+                            {/* Background from last photo but blurred and darkened */}
+                            <div className="absolute inset-0 -z-10">
+                                <img
+                                    src={journey.photos[journey.photos.length - 1]}
+                                    className="w-full h-full object-cover blur-2xl opacity-20"
+                                    alt="bg"
+                                />
+                                <div className="absolute inset-0 bg-black/60" />
+                            </div>
+
+                            <div className="max-w-xl mx-auto space-y-12">
+                                <div className="space-y-6">
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.5, duration: 1 }}
+                                    >
+                                        <h2 className="text-rose-500 font-sans text-sm tracking-[0.3em] uppercase mb-4">
+                                            The Question
+                                        </h2>
+                                        <h1 className="text-5xl md:text-7xl font-serif text-white leading-tight">
+                                            {journey.partner_name}, <br />
+                                            <span className="text-rose-100">will you be my Valentine?</span>
+                                        </h1>
+                                    </motion.div>
+
+                                    {step === 'accepted' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="pt-8"
+                                        >
+                                            <p className="text-2xl text-rose-300 italic">
+                                                Looking forward to it, {journey.proposer_name} x
+                                            </p>
+                                        </motion.div>
                                     )}
                                 </div>
 
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        className="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-sans font-medium hover:text-white transition-colors"
-                                    >
-                                        <span className="absolute inset-0 border border-neutral-800 group-hover:border-rose-900/50 transition-colors rounded-full" />
-                                        <span className="relative text-neutral-400 group-hover:text-rose-200 transition-colors tracking-widest uppercase">
-                                            Unlock Moment
-                                        </span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </motion.div>
-                )}
+                                {step !== 'accepted' && (
+                                    <div className="flex flex-col md:flex-row gap-6 justify-center items-center pt-8">
+                                        <button
+                                            onClick={handleYes}
+                                            className="px-12 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-serif text-xl tracking-wide shadow-lg shadow-rose-900/40 transform hover:scale-105 transition-all"
+                                        >
+                                            Yes, Absolutely
+                                        </button>
 
-                {/* === STEP 2: STORY (PHOTOS) === */}
-                {step === 'story' && (
-                    <motion.div
-                        key="story"
-                        className="fixed inset-0 bg-black"
-                    >
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={currentPhotoIndex} // Unique key triggers exit/enter
-                                variants={kenBurnsVariants}
-                                initial="initial"
-                                animate="animate"
-                                exit="exit"
-                                className="absolute inset-0 w-full h-full"
-                            >
-                                {/* Image Layer */}
-                                <img
-                                    src={journey.photos[currentPhotoIndex]}
-                                    alt="Memory"
-                                    className="w-full h-full object-cover opacity-80"
-                                />
-
-                                {/* Vignette/Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-
-                                {/* Optional Text Overlay per slide could go here */}
-                                <div className="absolute bottom-20 left-0 right-0 text-center p-8">
-                                    <p className="text-white/70 italic font-medium tracking-wider">
-                                        {currentPhotoIndex === 0 && "It started with a moment..."}
-                                        {currentPhotoIndex === 1 && "And grew into a lifetime..."}
-                                        {currentPhotoIndex >= 2 && "Of memories and dreams..."}
-                                    </p>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
-                    </motion.div>
-                )}
-
-                {/* === STEP 3: PROPOSAL (FINAL) === */}
-                {(step === 'proposal' || step === 'accepted') && (
-                    <motion.div
-                        key="proposal"
-                        variants={fadeVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="relative min-h-screen flex flex-col items-center justify-center text-center p-6 z-20"
-                    >
-                        {/* Background from last photo but blurred and darkened */}
-                        <div className="absolute inset-0 -z-10">
-                            <img
-                                src={journey.photos[journey.photos.length - 1]}
-                                className="w-full h-full object-cover blur-2xl opacity-20"
-                                alt="bg"
-                            />
-                            <div className="absolute inset-0 bg-black/60" />
-                        </div>
-
-                        <div className="max-w-xl mx-auto space-y-12">
-                            <div className="space-y-6">
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 0.5, duration: 1 }}
-                                >
-                                    <h2 className="text-rose-500 font-sans text-sm tracking-[0.3em] uppercase mb-4">
-                                        The Question
-                                    </h2>
-                                    <h1 className="text-5xl md:text-7xl font-serif text-white leading-tight">
-                                        {journey.partner_name}, <br />
-                                        <span className="text-rose-100">will you be my Valentine?</span>
-                                    </h1>
-                                </motion.div>
-
-                                {step === 'accepted' && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="pt-8"
-                                    >
-                                        <p className="text-2xl text-rose-300 italic">
-                                            Looking forward to it, {journey.proposer_name} x
-                                        </p>
-                                    </motion.div>
+                                        <button
+                                            ref={noButtonRef}
+                                            onMouseEnter={handleNoHover}
+                                            onTouchStart={handleNoHover}
+                                            className="px-8 py-4 bg-transparent border border-neutral-700 text-neutral-500 hover:text-white hover:border-white rounded-full font-sans text-sm tracking-widest uppercase transition-all"
+                                        >
+                                            No, Sorry
+                                        </button>
+                                    </div>
                                 )}
                             </div>
-
-                            {step !== 'accepted' && (
-                                <div className="flex flex-col md:flex-row gap-6 justify-center items-center pt-8">
-                                    <button
-                                        onClick={handleYes}
-                                        className="px-12 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-full font-serif text-xl tracking-wide shadow-lg shadow-rose-900/40 transform hover:scale-105 transition-all"
-                                    >
-                                        Yes, Absolutely
-                                    </button>
-
-                                    <button
-                                        ref={noButtonRef}
-                                        onMouseEnter={handleNoHover}
-                                        onTouchStart={handleNoHover}
-                                        className="px-8 py-4 bg-transparent border border-neutral-700 text-neutral-500 hover:text-white hover:border-white rounded-full font-sans text-sm tracking-widest uppercase transition-all"
-                                    >
-                                        No, Sorry
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                        </motion.div>
+                    )
+                }
+            </AnimatePresence >
+        </div >
     )
 }
