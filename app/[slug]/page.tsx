@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const { slug } = await params
 
     const { data: journey } = await supabase
-        .from('val_journeys')
+        .from('valentine_journeys')
         .select('partner_name')
         .eq('slug', slug)
         .single()
@@ -28,7 +28,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     const { slug } = await params
 
     const { data: journey, error } = await supabase
-        .from('val_journeys')
+        .from('valentine_journeys')
         .select('*')
         .eq('slug', slug)
         .single()
