@@ -42,9 +42,9 @@ export default function LoveReasonsSection({
                 // Done showing reasons
                 setTimeout(() => {
                     if (onComplete) onComplete()
-                }, 4000)
+                }, 1500)
             }
-        }, 5000) // 5 seconds per reason
+        }, 3000) // 3 seconds per reason
 
         return () => clearTimeout(timer)
     }, [currentIndex, displayReasons.length, onComplete])
@@ -61,13 +61,13 @@ export default function LoveReasonsSection({
             x: 0,
             opacity: 1,
             scale: 1,
-            transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const }
+            transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }
         },
         exit: (direction: number) => ({
             x: direction > 0 ? -300 : 300,
             opacity: 0,
             scale: 0.9,
-            transition: { duration: 0.6, ease: [0.55, 0.06, 0.68, 0.19] as const }
+            transition: { duration: 0.4, ease: [0.55, 0.06, 0.68, 0.19] as const }
         }),
     }
 

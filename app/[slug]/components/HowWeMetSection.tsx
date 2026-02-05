@@ -45,9 +45,9 @@ Every day with you is an adventure I never want to end.`
         const containerHeight = container.clientHeight
         const scrollDistance = contentHeight - containerHeight + 100
 
-        // Calculate scroll duration based on text length (140 WPM reading pace)
+        // Calculate scroll duration based on text length (200 WPM reading pace)
         const wordCount = storyText.split(/\s+/).length
-        const readingTimeMs = Math.max((wordCount / 140) * 60 * 1000, 4000) // Min 4 seconds
+        const readingTimeMs = Math.max((wordCount / 200) * 60 * 1000, 3000) // Min 3 seconds
 
         let startTime: number
         let animationId: number
