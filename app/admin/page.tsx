@@ -30,6 +30,7 @@ export default function AdminPage() {
         photos: [] as string[], // Keep for backward compat
         media: [] as MediaItem[],
         how_we_met_text: '',
+        love_text: '',
         love_reasons: [] as LoveReason[],
     })
     const [successLink, setSuccessLink] = useState('')
@@ -74,6 +75,7 @@ export default function AdminPage() {
                     photos: data.photos || [],
                     media: data.media || [],
                     how_we_met_text: data.how_we_met_text || '',
+                    love_text: data.love_text || '',
                     love_reasons: data.love_reasons || [],
                 })
                 alert('Journey loaded! You can now edit and save changes.')
@@ -216,6 +218,7 @@ export default function AdminPage() {
                         photos: photosForDB.length > 0 ? photosForDB : formData.photos,
                         media: formData.media,
                         how_we_met_text: formData.how_we_met_text || null,
+                        love_text: formData.love_text || null,
                         love_reasons: formData.love_reasons.filter(r => r.text.trim()),
                         proposer_phone: 'N/A', // Unused but required by DB
                         is_accepted: false,
@@ -627,13 +630,41 @@ Write as much or as little as you'd like. Each paragraph will be displayed beaut
                     {/* === TAB: LOVE REASONS === */}
                     {activeTab === 'love' && (
                         <div className="space-y-6 animate-in fade-in">
+                            {/* Love Letter (Cinematic Text) */}
+                            <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-6 space-y-4">
+                                <div>
+                                    <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                                        💌 Love Letter
+                                    </h3>
+                                    <p className="text-sm text-neutral-400">Write a cinematic message about what you love. This appears as beautiful scrolling text.</p>
+                                </div>
+
+                                <textarea
+                                    name="love_text"
+                                    placeholder="My dearest, there are so many reasons why I love you...
+
+The way you laugh, the way you light up every room you enter.
+
+Write paragraphs separated by blank lines for a cinematic effect."
+                                    value={formData.love_text}
+                                    onChange={handleInputChange}
+                                    rows={6}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-rose-500 focus:outline-none text-white placeholder-neutral-500 resize-none"
+                                />
+
+                                <p className="text-xs text-neutral-500">
+                                    Tip: Use line breaks to create paragraphs. This will be displayed in the same cinematic style as "How We Met".
+                                </p>
+                            </div>
+
+                            {/* Individual Love Reasons (Carousel) */}
                             <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-6 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                                            💕 What I Love About You
+                                            💕 Quick Reasons (Carousel)
                                         </h3>
-                                        <p className="text-sm text-neutral-400">List the things you love about your partner. These will appear as a beautiful carousel.</p>
+                                        <p className="text-sm text-neutral-400">Short reasons shown as a quick carousel before the love letter.</p>
                                     </div>
                                     <button
                                         type="button"

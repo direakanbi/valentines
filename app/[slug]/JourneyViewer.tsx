@@ -10,6 +10,7 @@ import { Heart, Lock, Volume2, VolumeX } from 'lucide-react'
 import MediaGallery from './components/MediaGallery'
 import HowWeMetSection from './components/HowWeMetSection'
 import LoveReasonsSection from './components/LoveReasonsSection'
+import WhatILoveSection from './components/WhatILoveSection'
 
 // Types
 type MediaItem = {
@@ -34,12 +35,13 @@ type Journey = {
     photos: string[]
     media?: MediaItem[]
     how_we_met_text?: string
+    love_text?: string
     love_reasons?: LoveReason[]
     music_url?: string
     is_accepted: boolean
 }
 
-type Phase = 'loading' | 'splash' | 'hero' | 'gallery' | 'story' | 'reasons' | 'proposal' | 'accepted'
+type Phase = 'loading' | 'splash' | 'hero' | 'gallery' | 'story' | 'reasons' | 'love' | 'proposal' | 'accepted'
 
 export default function JourneyViewer({ journey }: { journey: Journey }) {
     const [phase, setPhase] = useState<Phase>('loading')
@@ -445,7 +447,7 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
                             featuredMedia={howWeMetMedia}
                             partnerName={journey.partner_name}
                             proposerName={journey.proposer_name}
-                            onComplete={() => setPhase('reasons')}
+                            onComplete={() => setPhase('love')}
                         />
                     </motion.div>
                 )}
@@ -469,6 +471,26 @@ export default function JourneyViewer({ journey }: { journey: Journey }) {
                 )}
 
                 {/* === PROPOSAL (FINAL) === */}
+                {phase === 'love' && (
+                    <motion.div
+                        key="love"
+                        variants={fadeVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="fixed inset-0 z-30 bg-black"
+                    >
+                        <WhatILoveSection
+                            text={journey.love_text}
+                            featuredMedia={allMedia.find(m => m.section === 'love') || howWeMetMedia}
+                            partnerName={journey.partner_name}
+                            proposerName={journey.proposer_name}
+                            onComplete={() => setPhase('reasons')}
+                        />
+                    </motion.div>
+                )}
+
+                {/* === LOVE REASONS (CAROUSEL) === */}
                 {(phase === 'proposal' || phase === 'accepted') && (
                     <motion.div
                         key="proposal"
