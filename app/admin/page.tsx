@@ -34,9 +34,56 @@ export default function AdminPage() {
     })
     const [successLink, setSuccessLink] = useState('')
     const [activeTab, setActiveTab] = useState<'basics' | 'media' | 'story' | 'love'>('basics')
+    const [loadingExisting, setLoadingExisting] = useState(false)
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    // Load existing journey data by slug
+    const loadExistingJourney = async () => {
+        if (!formData.slug.trim()) {
+            alert('Please enter a slug first')
+            return
+        }
+
+        setLoadingExisting(true)
+        try {
+            const { data, error } = await supabase
+                .from('valentine_journeys')
+                .select('*')
+                .eq('slug', formData.slug.trim())
+                .single()
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    alert('No journey found with this slug. You can create a new one!')
+                } else {
+                    throw error
+                }
+                return
+            }
+
+            if (data) {
+                setFormData({
+                    slug: data.slug || '',
+                    partner_name: data.partner_name || '',
+                    proposer_name: data.proposer_name || '',
+                    passcode: data.passcode || '',
+                    music_url: data.music_url || '',
+                    photos: data.photos || [],
+                    media: data.media || [],
+                    how_we_met_text: data.how_we_met_text || '',
+                    love_reasons: data.love_reasons || [],
+                })
+                alert('Journey loaded! You can now edit and save changes.')
+            }
+        } catch (error: any) {
+            console.error('Error loading journey:', error)
+            alert('Error loading journey: ' + error.message)
+        } finally {
+            setLoadingExisting(false)
+        }
     }
 
     // Smart file type detection
@@ -230,16 +277,30 @@ export default function AdminPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-neutral-300">Slug (URL Path) *</label>
-                                    <input
-                                        type="text"
-                                        name="slug"
-                                        required
-                                        placeholder="e.g. sarah-and-tom"
-                                        value={formData.slug}
-                                        onChange={handleInputChange}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                                    />
-                                    <p className="text-xs text-neutral-500">This will be: yoursite.com/{formData.slug || 'your-slug'}</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            name="slug"
+                                            required
+                                            placeholder="e.g. sarah-and-tom"
+                                            value={formData.slug}
+                                            onChange={handleInputChange}
+                                            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={loadExistingJourney}
+                                            disabled={loadingExisting}
+                                            className="px-4 py-3 bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                                        >
+                                            {loadingExisting ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                'Load Existing'
+                                            )}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-neutral-500">This will be: yoursite.com/{formData.slug || 'your-slug'} — Click "Load Existing" to edit an existing journey</p>
                                 </div>
 
                                 <div className="space-y-2">

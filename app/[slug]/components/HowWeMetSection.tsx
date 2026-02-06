@@ -131,7 +131,7 @@ Every day with you is an adventure I never want to end.`
                         ))}
 
                         {/* Signature */}
-                        <p className="text-xl text-white/40 font-serif italic text-center mt-16">
+                        <p className="text-xl text-rose-400 font-serif italic text-center mt-16">
                             — With love, {proposerName}
                         </p>
                     </motion.div>
